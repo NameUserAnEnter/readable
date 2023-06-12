@@ -208,7 +208,7 @@ void modifyData(std::string* data)
 				if (letter == '=') output += ' ';
 				if (letter == ':') output += ' ';
 
-				if (letter == ',')
+				if (letter == ',' || letter == ';')
 				{
 					output += "\r\n";
 					for (int i = 0; i < nest; i++)
