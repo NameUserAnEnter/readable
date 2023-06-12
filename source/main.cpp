@@ -2,6 +2,16 @@
 #include <stdlib.h>
 #include <string>
 
+std::wstring toWide(std::string str)
+{
+	std::wstring wide;
+	for (auto letter : str)
+	{
+		wide += letter;
+	}
+	return wide;
+}
+
 std::string EncodeToUTF8(std::wstring str)
 {
 	std::string encoded = "";
@@ -147,33 +157,98 @@ void modifyData(std::string* data)
 {
 	if (data == nullptr) return;
 	std::string copy = *data;
-
+	//					0123456789012345678901
+	//std::string copy = "testDict = { testVar }";
+	std::string output = "";
 
 	int nest = 0;
-	for (int i = 0; i < copy.size(); i++)
+	bool inQuotes = false;
+	bool escaped = false;
+	for (auto letter : copy)
 	{
-		if (copy[i] == '{')
+		if (letter == '"')
 		{
-			nest++;
+			if (inQuotes)
+			{
+				if (!escaped)
+				{
+					inQuotes = !inQuotes;
+				}
+			}
+			else
+			{
+				inQuotes = !inQuotes;
+			}
 		}
 
-		// replace()
+		if (inQuotes && letter == '\\') escaped = true;
+		else escaped = false;
+
+		if (letter != ' ' && letter != '\t' && letter != '\n' && letter != '\r')
+		{
+			if (!inQuotes)
+			{
+				if (letter == '}' || letter == ']')
+				{
+					output += "\r\n";
+					nest--;
+					for (int i = 0; i < nest; i++)
+					{
+						output += '\t';
+					}
+				}
+				if (letter == '=')
+				{
+					output += ' ';
+				}
+			}
+			output += letter;
+			if (!inQuotes)
+			{
+				if (letter == '=') output += ' ';
+				if (letter == ':') output += ' ';
+
+				if (letter == ',')
+				{
+					output += "\r\n";
+					for (int i = 0; i < nest; i++)
+					{
+						output += '\t';
+					}
+				}
+				if (letter == '{' || letter == '[')
+				{
+					output += "\r\n";
+					nest++;
+					for (int i = 0; i < nest; i++)
+					{
+						output += '\t';
+					}
+				}
+			}
+		}
 	}
 
 
-	*data = copy;
+	*data = output;
 }
 
 
 int main()
 {
 	std::string data = "";
-	GetFileData(L"D:/conversion/tbdl/parsed_regex_sample.txt", &data);
+	
+	std::string dir = "D:/conversion/tbdl/";
+	std::string inputFile = "parsed_regex_sample.txt";
+	std::string outputFile = "parsed_regex_sample_output.txt";
+
+	GetFileData(toWide(dir + inputFile).c_str(), &data);
 
 	modifyData(&data);
 	PrintConsole(data);
 
-	//
+	ClearFile(toWide(dir + outputFile));
+	WriteDataToFile(data, toWide(dir + outputFile).c_str());
 
 	while (getc(stdin) != 'x') { };
 	return 0;
