@@ -184,7 +184,7 @@ void modifyData(std::string* data)
 		if (inQuotes && letter == '\\') escaped = true;
 		else escaped = false;
 
-		if (letter != ' ' && letter != '\t' && letter != '\n' && letter != '\r')
+		if ((letter != ' ' && letter != '\t' && letter != '\n' && letter != '\r') || inQuotes)
 		{
 			if (!inQuotes)
 			{
