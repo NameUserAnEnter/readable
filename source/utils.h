@@ -288,7 +288,8 @@ inline std::wstring GetBackslashPath(std::wstring forwardslashPath)
 }
 
 
-inline bool findCharInStr(std::wstring str, wchar_t query)
+template<typename T>
+inline bool findCharInStr(std::basic_string<T> str, T query)
 {
     for (int i = 0; i < str.size(); i++)
     {
@@ -298,7 +299,7 @@ inline bool findCharInStr(std::wstring str, wchar_t query)
 }
 
 
-inline bool isStrNum(std::wstring str)
+inline bool isStrNum(std::basic_string<wchar_t> str)
 {
     for (auto symbol : str)
     {
@@ -310,7 +311,20 @@ inline bool isStrNum(std::wstring str)
     return true;
 }
 
-inline bool findInStr(std::wstring str, std::wstring query)
+inline bool isStrNum(std::basic_string<char> str)
+{
+    for (auto symbol : str)
+    {
+        if (!isdigit(symbol))
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
+template<typename T>
+inline bool findInStr(std::basic_string<T> str, std::basic_string<T> query)
 {
     unsigned int index = 0;
     for (int i = 0; i < str.size(); i++)
@@ -331,7 +345,9 @@ inline bool findInStr(std::wstring str, std::wstring query)
     return false;
 }
 
-inline int whereSubStr(std::wstring str, std::wstring query)
+
+template<typename T>
+inline int whereSubStr(std::basic_string<T> str, std::basic_string<T> query)
 {
     unsigned int index = 0;
     for (int i = 0; i < str.size(); i++)
@@ -349,10 +365,13 @@ inline int whereSubStr(std::wstring str, std::wstring query)
     return -1;
 }
 
-inline void replaceSubStr(std::wstring& str, std::wstring query, std::wstring replacement)
+template<typename T>
+inline void replaceSubStr(std::basic_string<T>& str, std::basic_string<T> query, std::basic_string<T> replacement)
 {
     int start = whereSubStr(str, query);
-    std::wstring copy = L"";
+    std::basic_string<T> copy;
+    copy.clear();
+
     for (int i = 0; i < start; i++)
     {
         copy += str[i];
@@ -369,7 +388,8 @@ inline void replaceSubStr(std::wstring& str, std::wstring query, std::wstring re
     str = copy;
 }
 
-inline void replaceAllSubStr(std::wstring& str, std::wstring query, std::wstring replacement)
+template<typename T>
+inline void replaceAllSubStr(std::basic_string<T>& str, std::basic_string<T> query, std::basic_string<T> replacement)
 {
     while (whereSubStr(str, query) != -1)
     {
@@ -377,11 +397,19 @@ inline void replaceAllSubStr(std::wstring& str, std::wstring query, std::wstring
     }
 }
 
-inline bool beginWith(std::wstring str, std::wstring query)
+template<typename T>
+inline bool beginWith(std::basic_string<T> str, std::basic_string<T> query)
 {
     if (whereSubStr(str, query) == 0) return true;
     else return false;
 }
+
+template<typename T>
+inline bool beginWith(std::basic_string<T> str, const T* query)
+{
+    return beginWith(str, std::basic_string<T>(query));
+}
+
 
 
 

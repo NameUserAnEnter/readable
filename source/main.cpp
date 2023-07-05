@@ -18,7 +18,7 @@ void PrintConsole(std::string output)
 
 
 
-void modifyData(std::string* data)
+void ParseJSON(std::string* data)
 {
 	if (data == nullptr) return;
 	std::string copy = *data;
@@ -98,7 +98,7 @@ void modifyData(std::string* data)
 	*data = output;
 }
 
-void modifyData2(std::string* input)
+void ParseHTML(std::string* input)
 {
 	if (input == nullptr) return;
 
@@ -133,38 +133,33 @@ void modifyData2(std::string* input)
 
 
 	int nest = 0;
-	std::string prevTag = "";
+	std::vector<std::string> closingTags;	// stack: push_back(), pop_back(), get_back() (for comparison)
 	for (int i = lines.size() - 1; i >= 0; i--)
 	{
 		std::string currentLine = lines[i];
 		std::string currentTag = getTagWithSlashOrNot(currentLine);
-		for (int j = 1; j < currentLine.size(); j++)
+
+		if (!beginWith(currentTag, "/") && !closingTags.empty())
 		{
-			if (currentLine[0] == '<' && currentLine[1] != '/' && currentTag != "img")
+			if ("/" + currentTag == closingTags.back())
 			{
 				nest--;
-				break;
+				closingTags.pop_back();
 			}
 		}
 
-		//MessageDialog(NumToStr(nest) + ": " + getTagWithSlashOrNot(currentLine) + "\n" + currentLine);
 
-
-		//MessageDialog(NumToStr(nest) + ": " + line);
 		outputLines[i] = currentLine;
 		for (int j = 0; j < nest; j++)
 		{
 			outputLines[i] = '\t' + outputLines[i];
 		}
 
-		for (int j = 0; j < currentLine.size(); j++)
+		
+		if (beginWith(currentTag, "/"))
 		{
-			if (j == 0 || j == 1) continue;
-			if (currentLine[0] == '<' && currentLine[1] == '/')
-			{
-				nest++;
-				break;
-			}
+			closingTags.push_back(currentTag);
+			nest++;
 		}
 	}
 
@@ -185,7 +180,7 @@ int main()
 
 	GetFileData(toWide(dir + inputFile).c_str(), &data);
 
-	modifyData2(&data);
+	ParseHTML(&data);
 	PrintConsole(data);
 
 	ClearFileData(toWide(dir + outputFile).c_str());
