@@ -209,7 +209,7 @@ inline int GetFileData(const wchar_t* filename, std::string* returnData = nullpt
     _wfopen_s(&file, filename, L"rb");
     if (file == nullptr)
     {
-        ErrMsgExit(L"Cannot open: " + std::wstring(filename) + L'\n');
+        //ErrMsgExit(L"Cannot open: " + std::wstring(filename) + L'\n');
         return 1;
     }
 
@@ -231,7 +231,7 @@ inline int WriteDataToFile(std::string data, const wchar_t* filename)
     _wfopen_s(&file, filename, L"wb");
     if (file == nullptr)
     {
-        ErrMsgExit(L"Cannot open: " + std::wstring(filename) + L'\n');
+        //ErrMsgExit(L"Cannot open: " + std::wstring(filename) + L'\n');
         return 1;
     }
 
@@ -250,7 +250,7 @@ inline int AppendDataToFile(std::string data, const wchar_t* filename)
     _wfopen_s(&file, filename, L"a+b");
     if (file == nullptr)
     {
-        ErrMsgExit(L"Cannot open: " + std::wstring(filename) + L"\n");
+        //ErrMsgExit(L"Cannot open: " + std::wstring(filename) + L"\n");
         return 1;
     }
 
@@ -408,6 +408,29 @@ template<typename T>
 inline bool beginWith(std::basic_string<T> str, const T* query)
 {
     return beginWith(str, std::basic_string<T>(query));
+}
+
+template<typename T>
+inline std::vector<std::basic_string<T>> splitByChar(std::basic_string<T> str, T query, bool leaveQueried = true)
+{
+    std::vector<std::basic_string<T>> returnValue;
+    returnValue.clear();
+    returnValue.push_back(std::basic_string<T>());
+    for (int i = 0; i < str.size(); i++)
+    {
+        returnValue.back() += str[i];
+        if (str[i] == query)
+        {
+            if (!leaveQueried) returnValue.back().pop_back();
+            returnValue.push_back(std::basic_string<T>());
+        }
+    }
+
+    if (!returnValue.empty())
+    {
+        if (returnValue.back().size() == 0) returnValue.pop_back();
+    }
+    return returnValue;
 }
 
 

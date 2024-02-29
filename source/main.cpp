@@ -3,189 +3,163 @@
 #include <string>
 #include <vector>
 #include "utils.h"
+#include "console.h"
+#include "parse.h"
 
 
-
-void PrintConsole(std::wstring output)
+int main(int argc, char* argv[])
 {
-	printf("%ls", output.c_str());
-}
+	enum modes { def, html, json, help } mode = def;
+	bool knowInput = false;
+	bool knowOutput = false;
 
-void PrintConsole(std::string output)
-{
-	printf("%s", output.c_str());
-}
+	std::string inputFile;
+	std::string outputFile;
 
-
-
-void ParseJSON(std::string* data)
-{
-	if (data == nullptr) return;
-	std::string copy = *data;
-	//					0123456789012345678901
-	//std::string copy = "testDict = { testVar }";
-	std::string output = "";
-
-	int nest = 0;
-	bool inQuotes = false;
-	bool escaped = false;
-	for (auto letter : copy)
+	if (argc > 0)
 	{
-		if (letter == '"')
+		for (int i = 0; i < argc; i++)
 		{
-			if (inQuotes)
+			if (i == 0) continue;
+
+			if (mode == def)
 			{
-				if (!escaped)
+				if (!strcmp(argv[i], "--html") || !strcmp(argv[i], "-h"))
 				{
-					inQuotes = !inQuotes;
+					mode = html;
+				}
+				if (!strcmp(argv[i], "--json") || !strcmp(argv[i], "-j"))
+				{
+					mode = json;
+				}
+				if (!strcmp(argv[i], "--help"))
+				{
+					mode = help;
 				}
 			}
-			else
-			{
-				inQuotes = !inQuotes;
-			}
-		}
 
-		if (inQuotes && letter == '\\') escaped = true;
-		else escaped = false;
-
-		if ((letter != ' ' && letter != '\t' && letter != '\n' && letter != '\r') || inQuotes)
-		{
-			if (!inQuotes)
+			if (argv[i][0] != '-')
 			{
-				if (letter == '}' || letter == ']')
+				if (!knowInput)
 				{
-					output += "\r\n";
-					nest--;
-					for (int i = 0; i < nest; i++)
-					{
-						output += '\t';
-					}
+					inputFile = argv[i];
+					knowInput = true;
 				}
-				if (letter == '=')
+				else if (!knowOutput)
 				{
-					output += ' ';
-				}
-			}
-			output += letter;
-			if (!inQuotes)
-			{
-				if (letter == '=') output += ' ';
-				if (letter == ':') output += ' ';
-
-				if (letter == ',' || letter == ';')
-				{
-					output += "\r\n";
-					for (int i = 0; i < nest; i++)
-					{
-						output += '\t';
-					}
-				}
-				if (letter == '{' || letter == '[')
-				{
-					output += "\r\n";
-					nest++;
-					for (int i = 0; i < nest; i++)
-					{
-						output += '\t';
-					}
+					outputFile = argv[i];
+					knowOutput = true;
 				}
 			}
 		}
 	}
 
-
-	*data = output;
-}
-
-void ParseHTML(std::string* input)
-{
-	if (input == nullptr) return;
-
-	std::string data = *input;
-	std::string output = "";
-
-	std::vector<std::string> lines;
-	lines.clear();
-	lines.push_back("");
-	for (int i = 0; i < data.size(); i++)
+	while (mode == def)
 	{
-		if (data[i] == '<') lines.push_back("");
-		lines.back() += data[i];
+		PrintConsole("Mode? (json/html/help): ");
+		std::string response = ReadConsole();
+
+		if (response == "json")
+		{
+			mode = json;
+			break;
+		}
+		if (response == "html")
+		{
+			mode = html;
+			break;
+		}
+		if (response == "help")
+		{
+			mode = help;
+			break;
+		}
 	}
 
-
-
-
-	std::vector<std::string> outputLines;
-	outputLines.resize(lines.size());
-
-	auto getTagWithSlashOrNot = [](std::string line)
+	if (mode == help)
 	{
-		std::string tag = "";
-		for (int i = 1; i < line.size(); i++)
-		{
-			if (line[i] == ' ' || line[i] == '>') break;
-			tag += line[i];
-		}
-		return tag;
-	};
+		PrintConsole("\nUSAGE:\n");
+		PrintConsole("readable[.exe] [ARGS] [INPUT] [OUTPUT]\n");
 
+		PrintConsole("\nARGS:\n");
+		PrintConsole("-h, --html: Use HTML mode.\n");
+		PrintConsole("-j, --json: Use JSON mode.\n");
+		PrintConsole("--help: Print help.\n");
 
-	int nest = 0;
-	std::vector<std::string> closingTags;	// stack: push_back(), pop_back(), get_back() (for comparison)
-	for (int i = lines.size() - 1; i >= 0; i--)
+		PrintConsole("\nINPUT:\n");
+		PrintConsole("Existing input file.\n");
+
+		PrintConsole("\nOUTPUT:\n");
+		PrintConsole("Output file name.\n");
+
+		PrintConsole("\n");
+
+		getc(stdin);
+		return 0;
+	}
+
+	// -------------------------------------------------------
+
+	if (!knowInput)
 	{
-		std::string currentLine = lines[i];
-		std::string currentTag = getTagWithSlashOrNot(currentLine);
+		PrintConsole("Input file: ");
+		inputFile = ReadConsole();
+	}
+	if (!knowOutput)
+	{
+		// outputFile is set automatically to:
+		// inputFileBasename + '_readable' + inputFileExtension
+		//
+		// (where inputFileExtension is dot-inclusive)
 
-		if (!beginWith(currentTag, "/") && !closingTags.empty())
+
+		outputFile = "";
+		std::string basename = "";
+		std::string ext = "";
+
+		std::string currentFragment = "";
+		for (int i = 0; i < inputFile.size(); i++)
 		{
-			if ("/" + currentTag == closingTags.back())
+			if (inputFile[i] == '.')
 			{
-				nest--;
-				closingTags.pop_back();
+				basename += currentFragment;
+				currentFragment = "";
 			}
+			currentFragment += inputFile[i];
 		}
-
-
-		outputLines[i] = currentLine;
-		for (int j = 0; j < nest; j++)
+		if (basename.empty())
 		{
-			outputLines[i] = '\t' + outputLines[i];
+			basename += currentFragment;
+		}
+		else
+		{
+			ext += currentFragment;
 		}
 
-		
-		if (beginWith(currentTag, "/"))
-		{
-			closingTags.push_back(currentTag);
-			nest++;
-		}
+		outputFile = basename + "_readable" + ext;
 	}
 
+	// -------------------------------------------------------
 
-
-	for (auto line : outputLines) output += line + '\n';
-	*input = output;
-}
-
-
-int main()
-{
 	std::string data = "";
-	
-	std::string dir = "";
-	std::string inputFile = "input.html";
-	std::string outputFile = "output.html";
+	if (GetFileData(toWide(inputFile).c_str(), &data))
+	{
+		PrintConsole("Failed to open file '" + inputFile + "'.\n");
 
-	GetFileData(toWide(dir + inputFile).c_str(), &data);
+		getc(stdin);
+		return 1;
+	}
 
-	ParseHTML(&data);
+	if (mode == html) ReadableHTML(&data);
+	if (mode == json) ReadableJSON(&data);
 	PrintConsole(data);
 
-	ClearFileData(toWide(dir + outputFile).c_str());
-	WriteDataToFile(data, toWide(dir + outputFile).c_str());
+	ClearFileData(toWide(outputFile).c_str());
+	WriteDataToFile(data, toWide(outputFile).c_str());
 
-	while (getc(stdin) != 'x') { };
+	PrintConsole("\nWrote " + std::to_string(data.size()) + " characters to '" + outputFile + "'.\n");
+
+	getc(stdin);
 	return 0;
 }
+
